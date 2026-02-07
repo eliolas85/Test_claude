@@ -1,9 +1,2 @@
-# Dipendenze principali
-kivy>=2.3.0
-kivymd>=1.2.0
-yt-dlp>=2024.1.0
-pillow
-
-# Per build Android APK
-buildozer
-cython
+flask
+yt-dlp
