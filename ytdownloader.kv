@@ -1,0 +1,204 @@
+#:kivy 2.0
+
+<DownloadItemWidget>:
+    orientation: "horizontal"
+    size_hint_y: None
+    height: dp(88)
+    padding: dp(12), dp(8)
+    spacing: dp(12)
+
+    canvas.before:
+        Color:
+            rgba: app.theme_cls.bg_darkest if self.bg_dark else app.theme_cls.bg_normal
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        # Linea separatore
+        Color:
+            rgba: app.theme_cls.divider_color
+        Rectangle:
+            pos: self.x, self.y
+            size: self.width, dp(1)
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 0.7
+        spacing: dp(2)
+
+        MDLabel:
+            id: lbl_title
+            text: root.title
+            font_style: "Body1"
+            theme_text_color: "Primary"
+            shorten: True
+            shorten_from: "right"
+            max_lines: 1
+
+        MDLabel:
+            id: lbl_status
+            text: root.status_text
+            font_style: "Caption"
+            theme_text_color: "Secondary"
+
+        MDProgressBar:
+            id: progress_bar
+            value: root.progress
+            max: 100
+            size_hint_y: None
+            height: dp(4)
+
+    BoxLayout:
+        size_hint_x: 0.3
+        orientation: "vertical"
+        spacing: dp(4)
+        padding: 0, dp(4)
+
+        MDLabel:
+            text: root.speed
+            font_style: "Caption"
+            halign: "right"
+            theme_text_color: "Hint"
+
+        BoxLayout:
+            spacing: dp(4)
+            size_hint_y: None
+            height: dp(36)
+
+            MDIconButton:
+                icon: "play-circle"
+                on_release: root.play_video()
+                disabled: root.status_text != "Completato"
+                icon_size: "22sp"
+
+            MDIconButton:
+                icon: "delete"
+                on_release: root.delete_video()
+                theme_icon_color: "Custom"
+                icon_color: app.theme_cls.error_color
+                icon_size: "22sp"
+
+
+<RootScreen>:
+    orientation: "vertical"
+
+    MDTopAppBar:
+        title: "YT Downloader"
+        md_bg_color: app.theme_cls.primary_color
+        specific_text_color: 1, 1, 1, 1
+        left_action_items: [["youtube", lambda x: None]]
+        right_action_items: [["folder", lambda x: app.root_widget.open_folder()], ["information", lambda x: app.root_widget.show_info()]]
+
+    MDBottomNavigation:
+        id: bottom_nav
+        panel_color: app.theme_cls.bg_light
+        selected_color_background: app.theme_cls.primary_light
+        text_color_active: app.theme_cls.primary_color
+
+        # ---- TAB DOWNLOAD ----
+        MDBottomNavigationItem:
+            name: "download"
+            text: "Download"
+            icon: "download"
+
+            ScrollView:
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: dp(16)
+                    spacing: dp(12)
+
+                    MDLabel:
+                        text: "Incolla uno o piu URL YouTube"
+                        font_style: "H6"
+                        size_hint_y: None
+                        height: dp(36)
+
+                    MDTextField:
+                        id: url_input
+                        hint_text: "URL video (uno per riga)"
+                        multiline: True
+                        mode: "rectangle"
+                        size_hint_y: None
+                        height: dp(120)
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(56)
+                        spacing: dp(12)
+
+                        MDLabel:
+                            text: "Qualita:"
+                            size_hint_x: 0.3
+                            valign: "center"
+
+                        Spinner:
+                            id: quality_spinner
+                            text: "Migliore"
+                            values: ["Migliore", "1080p", "720p", "480p", "360p", "Solo Audio"]
+                            size_hint_x: 0.7
+                            background_color: app.theme_cls.primary_light
+                            color: 1, 1, 1, 1
+
+                    MDRaisedButton:
+                        text: "AVVIA DOWNLOAD"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(50)
+                        md_bg_color: app.theme_cls.primary_color
+                        on_release: app.root_widget.start_downloads()
+
+                    MDLabel:
+                        id: lbl_queue_info
+                        text: ""
+                        font_style: "Caption"
+                        theme_text_color: "Hint"
+                        size_hint_y: None
+                        height: dp(24)
+
+                    # Lista download attivi
+                    BoxLayout:
+                        id: active_downloads_list
+                        orientation: "vertical"
+                        size_hint_y: None
+                        height: self.minimum_height
+
+        # ---- TAB LIBRERIA ----
+        MDBottomNavigationItem:
+            name: "library"
+            text: "Libreria"
+            icon: "play-box-multiple"
+
+            BoxLayout:
+                orientation: "vertical"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    padding: dp(12), dp(8)
+
+                    MDLabel:
+                        text: "Video scaricati"
+                        font_style: "H6"
+
+                    MDLabel:
+                        id: lbl_storage
+                        text: ""
+                        font_style: "Caption"
+                        halign: "right"
+                        theme_text_color: "Hint"
+
+                ScrollView:
+                    BoxLayout:
+                        id: library_list
+                        orientation: "vertical"
+                        size_hint_y: None
+                        height: self.minimum_height
+
+                    # Messaggio vuoto
+                MDLabel:
+                    id: lbl_empty_library
+                    text: "Nessun video scaricato.\\nVai alla tab Download per iniziare!"
+                    halign: "center"
+                    valign: "center"
+                    theme_text_color: "Hint"
