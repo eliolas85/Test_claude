@@ -316,7 +316,9 @@ HTML_TEMPLATE = r"""
   </div>
   {% endfor %}
 
-  <script>setTimeout(function(){ location.reload(); }, 3000);</script>
+  {% if has_active %}
+  <script>setTimeout(function(){ location.reload(); }, 4000);</script>
+  {% endif %}
   {% endif %}
 </div>
 
@@ -482,12 +484,15 @@ def index():
         if v["status"] in ("pending", "downloading", "error", "cancelled")
     ][:20]
 
+    has_active = any(v["status"] in ("pending", "downloading") for v in recent_non_completed)
+
     return render_template_string(
         HTML_TEMPLATE,
         page="download",
         qualities=QUALITY_LABELS,
         selected_quality="best",
         active_downloads=recent_non_completed,
+        has_active=has_active,
         urls="",
         toast=request.args.get("toast"),
         toast_type=request.args.get("toast_type", ""),
