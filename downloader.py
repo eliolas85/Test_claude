@@ -13,12 +13,13 @@ from database import update_video, get_video
 MAX_CONCURRENT = 3
 
 QUALITY_MAP = {
-    "best": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-    "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]",
-    "720p": "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
-    "480p": "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]",
-    "360p": "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360]",
-    "audio": "bestaudio/best",
+    # Priorita: formato gia muxato (audio+video insieme) > merge separati
+    "best": "best[ext=mp4][acodec!=none][vcodec!=none]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
+    "1080p": "best[height<=1080][ext=mp4][acodec!=none][vcodec!=none]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]",
+    "720p": "best[height<=720][ext=mp4][acodec!=none][vcodec!=none]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
+    "480p": "best[height<=480][ext=mp4][acodec!=none][vcodec!=none]/bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]",
+    "360p": "best[height<=360][ext=mp4][acodec!=none][vcodec!=none]/bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360]",
+    "audio": "bestaudio[ext=m4a]/bestaudio/best",
 }
 
 QUALITY_LABELS = {
@@ -72,6 +73,20 @@ class DownloadEngine:
             elif d["status"] == "finished":
                 update_video(vid, progress=100)
 
+        postprocessors = []
+        if audio_only:
+            postprocessors.append({
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            })
+        else:
+            # Ri-muxa sempre in mp4 per garantire che audio e video siano uniti
+            postprocessors.append({
+                "key": "FFmpegVideoRemuxer",
+                "prefformat": "mp4",
+            })
+
         ydl_opts = {
             "format": fmt,
             "outtmpl": outtmpl,
@@ -81,14 +96,10 @@ class DownloadEngine:
             "quiet": True,
             "no_warnings": True,
             "merge_output_format": "mp4" if not audio_only else None,
+            "postprocessors": postprocessors,
+            # Embedding: includi audio nel container mp4
+            "postprocessor_args": {"ffmpeg": ["-c:a", "aac", "-c:v", "copy"]},
         }
-
-        if audio_only:
-            ydl_opts["postprocessors"] = [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }]
 
         try:
             update_video(vid, status="downloading", progress=0)

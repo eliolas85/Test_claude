@@ -407,6 +407,67 @@ function closeDelete() {
 """
 
 
+PLAYER_TEMPLATE = r"""
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#000">
+<title>{{ video.title or 'Player' }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; color: #eee; font-family: -apple-system, sans-serif; min-height: 100vh; }
+  .player-wrap {
+    width: 100%; max-width: 800px; margin: 0 auto;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  video, audio {
+    width: 100%; max-height: 60vh;
+    background: #000; display: block;
+  }
+  audio { margin-top: 30vh; }
+  .info {
+    padding: 16px; flex: 1;
+    background: #1a1a2e;
+  }
+  .info h2 { font-size: 16px; line-height: 1.4; margin-bottom: 8px; }
+  .info .meta { font-size: 13px; color: #aab; margin-bottom: 16px; }
+  .back-btn {
+    display: inline-block; padding: 10px 20px;
+    background: #e94560; color: #fff; text-decoration: none;
+    border-radius: 8px; font-weight: 600; font-size: 14px;
+  }
+  .back-btn:active { background: #c23152; }
+</style>
+</head>
+<body>
+<div class="player-wrap">
+  {% if is_audio %}
+  <audio controls autoplay preload="auto">
+    <source src="/stream/{{ vid }}" type="audio/mpeg">
+    Il browser non supporta la riproduzione audio.
+  </audio>
+  {% else %}
+  <video controls autoplay playsinline preload="auto">
+    <source src="/stream/{{ vid }}" type="video/mp4">
+    Il browser non supporta la riproduzione video.
+  </video>
+  {% endif %}
+  <div class="info">
+    <h2>{{ video.title or 'Video' }}</h2>
+    <div class="meta">
+      {{ video.duration }}
+      {% if video.filesize %} &middot; {{ (video.filesize / 1048576)|round(1) }} MB{% endif %}
+    </div>
+    <a href="/library" class="back-btn">&larr; Torna alla libreria</a>
+  </div>
+</div>
+</body>
+</html>
+"""
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -481,16 +542,29 @@ def library():
     )
 
 
+@app.route("/stream/<int:vid>")
+def stream(vid):
+    """Serve il file video/audio raw con MIME type corretto."""
+    video = get_video(vid)
+    if not video or not video.get("filename"):
+        return "File non trovato", 404
+    filename = video["filename"]
+    mimetype = "audio/mpeg" if filename.endswith(".mp3") else "video/mp4"
+    return send_from_directory(
+        get_download_dir(),
+        filename,
+        as_attachment=False,
+        mimetype=mimetype,
+    )
+
+
 @app.route("/play/<int:vid>")
 def play(vid):
     video = get_video(vid)
     if not video or not video.get("filename"):
         return redirect("/library?toast=File+non+trovato&toast_type=error")
-    return send_from_directory(
-        get_download_dir(),
-        video["filename"],
-        as_attachment=False,
-    )
+    is_audio = video["filename"].endswith(".mp3")
+    return render_template_string(PLAYER_TEMPLATE, video=video, vid=vid, is_audio=is_audio)
 
 
 @app.route("/delete/<int:vid>")
