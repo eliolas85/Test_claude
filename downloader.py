@@ -80,12 +80,6 @@ class DownloadEngine:
                 "preferredcodec": "mp3",
                 "preferredquality": "192",
             })
-        else:
-            # Ri-muxa sempre in mp4 per garantire che audio e video siano uniti
-            postprocessors.append({
-                "key": "FFmpegVideoRemuxer",
-                "prefformat": "mp4",
-            })
 
         ydl_opts = {
             "format": fmt,
@@ -97,8 +91,6 @@ class DownloadEngine:
             "no_warnings": True,
             "merge_output_format": "mp4" if not audio_only else None,
             "postprocessors": postprocessors,
-            # Embedding: includi audio nel container mp4
-            "postprocessor_args": {"ffmpeg": ["-c:a", "aac", "-c:v", "copy"]},
         }
 
         try:
